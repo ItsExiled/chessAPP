@@ -1,28 +1,105 @@
 mod gui;
-mod rules;
 mod state;
-mod assets;
+mod rules;
+mod ai;
 
 use iced::{
-    Application, Command, Element, Settings,
-    window, executor,
+    Application, Command, Element, Settings, Theme,
+    executor, window,
 };
-use gui::{ChessGui, Message};
+
+use gui::{GuiState, GuiMessage, Screen};
+use state::GameState;
 
 pub struct ChessApp {
-    gui: ChessGui,
+    gui_state: GuiState,
+    game_state: Option<GameState>,
+}
+
+impl Application for ChessApp {
+    type Message = GuiMessage;
+    type Theme = Theme;
+    type Executor = executor::Default;
+    type Flags = ();
+
+    fn new(_flags: ()) -> (ChessApp, Command<GuiMessage>) {
+        (
+            ChessApp {
+                gui_state: GuiState::new(),
+                game_state: None,
+            },
+            Command::none(),
+        )
+    }
+
+    fn title(&self) -> String {
+        String::from("Chess Game")
+    }
+
+    fn update(&mut self, message: GuiMessage) -> Command<GuiMessage> {
+        match message {
+            GuiMessage::NewGame => {
+                self.game_state = Some(GameState::new());
+                self.gui_state.screen = Screen::Game;
+            }
+            GuiMessage::SetDifficulty(difficulty) => {
+                self.gui_state.selected_difficulty = difficulty;
+            }
+            GuiMessage::LoadGame => {
+                // TODO: Implement game loading
+            }
+            GuiMessage::BackToMenu => {
+                self.gui_state.screen = Screen::MainMenu;
+                self.game_state = None;
+            }
+        }
+        Command::none()
+    }
+
+    fn view(&self) -> Element<GuiMessage> {
+        self.gui_state.view()
+    }
+}
+
+pub fn main() -> iced::Result {
+    ChessApp::run(Settings {
+        window: window::Settings {
+            size: (800, 600),
+            ..Default::default()
+        },
+        ..Default::default()
+    })
+}
+
+mod gui;
+mod state;
+mod rules;
+mod ai;
+
+use iced::{
+    Application, Command, Element, Settings, Theme,
+    executor, window,
+};
+
+pub struct ChessApp {
+    // We'll add state here later
+}
+
+#[derive(Debug, Clone)]
+pub enum Message {
+    // We'll add messages here later
 }
 
 impl Application for ChessApp {
     type Message = Message;
-    type Theme = iced::Theme;
+    type Theme = Theme;
     type Executor = executor::Default;
     type Flags = ();
 
     fn new(_flags: ()) -> (ChessApp, Command<Message>) {
         (
             ChessApp {
-                gui: ChessGui::new(),
+                // Initialize state here later
             },
             Command::none(),
         )
@@ -33,75 +110,22 @@ impl Application for ChessApp {
     }
 
     fn update(&mut self, message: Message) -> Command<Message> {
-        self.gui.update(message);
         Command::none()
     }
 
     fn view(&self) -> Element<Message> {
-        self.gui.view()
+        // We'll implement the view later
+        iced::widget::text("Chess Game").into()
     }
 }
 
 pub fn main() -> iced::Result {
     ChessApp::run(Settings {
         window: window::Settings {
-            size: (500, 500),
-            resizable: false,
+            size: (800, 600),
             ..Default::default()
         },
         ..Default::default()
     })
 }
 
-use iced::{
-    Sandbox, Settings, window,
-    widget::container,
-    Element,
-};
-
-mod assets;
-mod gui;
-mod rules;
-mod state;
-
-use gui::{ChessGui, Message};
-
-pub struct ChessApp {
-    gui: ChessGui,
-}
-
-impl Sandbox for ChessApp {
-    type Message = Message;
-    
-    fn new() -> Self {
-        ChessApp {
-            gui: ChessGui::new(),
-        }
-    }
-    
-    fn title(&self) -> String {
-        String::from("Chess Game")
-    }
-    
-    fn update(&mut self, message: Message) {
-        self.gui.update(message);
-    }
-    
-    fn view(&self) -> Element<Message> {
-        self.gui.view()
-    }
-}
-
-fn main() -> iced::Result {
-    ChessApp::run(Settings {
-        window: window::Settings {
-            size: (600, 600),
-            ..Default::default()
-        },
-        ..Default::default()
-    })
-}
-
-fn main() {
-    println!("Hello, world!");
-}
