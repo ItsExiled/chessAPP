@@ -85,11 +85,17 @@ impl Application for ChessApp {
 }
 
 pub fn main() -> iced::Result {
+    // Create assets directory if it doesn't exist
+    let home = std::env::var("HOME").unwrap_or_else(|_| String::from("/home/exiled"));
+    let assets_dir = format!("{}/chessAPP/chess_app/assets", home);
+    std::fs::create_dir_all(&assets_dir).ok();
+    
     ChessApp::run(Settings {
         window: window::Settings {
             size: (800, 600),
             ..Default::default()
         },
+        antialiasing: true,  // Enable antialiasing for better text rendering
         ..Default::default()
     })
 }

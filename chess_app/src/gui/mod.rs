@@ -1,8 +1,10 @@
-use iced::widget::{button, column, container, row, text, Column, Row, Container};
+use iced::widget::{button, column, container, row, text, Column, Row, Container, image};
 use iced::{Alignment, Element, Length, Color as IcedColor, Theme};
 // Add these imports
 use iced::theme;
-use crate::types::{Position, Color};
+use iced::widget::image::Handle;
+use std::path::PathBuf;
+use crate::types::{Position, Color, PieceType, Piece};
 use crate::state::GameState;
 
 #[derive(Debug, Clone)]
@@ -65,6 +67,46 @@ impl From<ChessSquareStyle> for theme::Container {
     fn from(style: ChessSquareStyle) -> Self {
         theme::Container::Custom(Box::new(style))
     }
+}
+
+// Helper function to get piece asset path
+fn get_piece_asset_path(piece: &Piece) -> PathBuf {
+    let color_str = match piece.color {
+        Color::White => "white",
+        Color::Black => "black",
+    };
+    
+    let piece_str = match piece.piece_type {
+        PieceType::King => "king",
+        PieceType::Queen => "queen",
+        PieceType::Rook => "rook",
+        PieceType::Bishop => "bishop",
+        PieceType::Knight => "knight",
+        PieceType::Pawn => "pawn",
+    };
+    
+    let filename = format!("{}_{}.png", color_str, piece_str);
+    let home = std::env::var("HOME").unwrap_or_else(|_| String::from("/home/exiled"));
+    PathBuf::from(format!("{}/chessAPP/chess_app/assets/{}", home, filename))
+}
+
+// Add this function for simpler fallback piece representation
+fn get_simple_piece_text(piece: &Piece) -> String {
+    let color_char = match piece.color {
+        Color::White => "W",
+        Color::Black => "B",
+    };
+    
+    let piece_char = match piece.piece_type {
+        PieceType::King => "K",
+        PieceType::Queen => "Q",
+        PieceType::Rook => "R",
+        PieceType::Bishop => "B",
+        PieceType::Knight => "N",
+        PieceType::Pawn => "P",
+    };
+    
+    format!("{}{}", color_char, piece_char)
 }
 
 impl GuiState {
@@ -156,20 +198,41 @@ impl GuiState {
                     is_selected,
                 };
                 
-                let piece_text = if let Some(piece) = game_state.board.get_piece(&pos) {
-                    let mut txt = text(GameState::get_piece_symbol(piece))
-                        .size(40);
-                        
-                    if piece.color == Color::Black {
-                        txt = txt.style(IcedColor::BLACK);
-                    }
+                // Use image widget instead of text for pieces
+                let square_content: Element<_> = if let Some(piece) = game_state.board.get_piece(&pos) {
+                    // Try to load the image asset
+                    let asset_path = get_piece_asset_path(piece);
                     
-                    txt
+                    if asset_path.exists() {
+                        // If asset exists, use the image
+                        let img = Handle::from_path(asset_path);
+                        image(img)
+                            .width(Length::Fixed(50.0))
+                            .height(Length::Fixed(50.0))
+                            .into()
+                    } else {
+                        // First try Unicode symbol
+                        let symbol = GameState::get_piece_symbol(piece);
+                        // If symbol starts with �, it means Unicode failed, use simple text instead
+                        let piece_text = if symbol.starts_with('�') {
+                            get_simple_piece_text(piece)
+                        } else {
+                            symbol.to_string()
+                        };
+                        
+                        let mut txt = text(piece_text).size(40);
+                            
+                        if piece.color == Color::Black {
+                            txt = txt.style(IcedColor::BLACK);
+                        }
+                        
+                        txt.into()
+                    }
                 } else {
-                    text("")
+                    text("").into()
                 };
                 
-                let square = Container::new(piece_text)
+                let square = Container::new(square_content)
                     .width(Length::Fixed(60.0))
                     .height(Length::Fixed(60.0))
                     .style(square_style)
