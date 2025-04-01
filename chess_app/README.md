@@ -12,16 +12,7 @@ A simple chess game implemented in Rust using the Iced GUI framework.
 
 ## Building and Running
 
-1. First, generate the chess piece assets:
-   ```bash
-   # Make the script executable
-   chmod +x src/scripts/create_placeholder_pieces.sh
-   
-   # Run the script to generate piece SVGs
-   ./src/scripts/create_placeholder_pieces.sh
-   ```
-
-2. Build and run the game:
+1.  Build and run the game:
    ```bash
    cargo run
    ```
