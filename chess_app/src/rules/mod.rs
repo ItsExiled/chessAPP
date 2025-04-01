@@ -67,7 +67,7 @@ impl Board {
     pub fn new_game() -> Self {
         let mut board = Board::new();
         
-        // Set up white pieces
+        // Set up white assets
         // Back rank
         board.set_piece(Position { rank: 0, file: 0 }, Some(Piece { piece_type: PieceType::Rook, color: Color::White }));
         board.set_piece(Position { rank: 0, file: 1 }, Some(Piece { piece_type: PieceType::Knight, color: Color::White }));
@@ -86,7 +86,7 @@ impl Board {
             );
         }
         
-        // Set up black pieces
+        // Set up black assets
         // Back rank
         board.set_piece(Position { rank: 7, file: 0 }, Some(Piece { piece_type: PieceType::Rook, color: Color::Black }));
         board.set_piece(Position { rank: 7, file: 1 }, Some(Piece { piece_type: PieceType::Knight, color: Color::Black }));
@@ -189,7 +189,7 @@ impl Board {
         from.rank == to.rank || from.file == to.file
     }
     
-    /// Checks if there are any pieces between two positions (not including the endpoints)
+    /// Checks if there are any assets between two positions (not including the endpoints)
     fn is_path_clear(&self, from: Position, to: Position) -> bool {
         let dx = (to.file - from.file).signum();
         let dy = (to.rank - from.rank).signum();
@@ -346,13 +346,13 @@ impl Board {
     }
     
     pub fn is_square_attacked(&self, pos: Position, by_color: Color) -> bool {
-        // Check all opponent's pieces for potential attacks
+        // Check all opponent's assets for potential attacks
         for rank in 0..8 {
             for file in 0..8 {
                 let from = Position { rank, file };
                 if let Some(piece) = self.get_piece(from) {
                     if piece.color == by_color {
-                        // For all pieces except king (to avoid infinite recursion)
+                        // For all assets except king (to avoid infinite recursion)
                         if piece.piece_type != PieceType::King {
                             if self.is_valid_move(from, pos, by_color) {
                                 return true;

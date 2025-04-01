@@ -1,5 +1,6 @@
-use crate::rules::{Board, Color, Position, Piece, PieceType};
-use crate::state::{GameState, Move};
+use crate::board::Board;
+use crate::types::{Color, Position, PieceType};
+use crate::state::GameState;
 
 pub struct ChessAI {
     color: Color,
@@ -29,19 +30,20 @@ impl ChessAI {
         for (from, to) in moves {
             // Create a new board with the move applied
             let mut new_board = game_state.board.clone();
-            let piece = new_board.get_piece(from)?;
-            new_board.set_piece(to, Some(piece));
-            new_board.set_piece(from, None);
-            
-            // Calculate value using minimax
-            let value = -self.minimax(&new_board, self.depth - 1, -beta, -alpha, self.color.opposite());
-            
-            if value > best_value {
-                best_value = value;
-                best_move = Some((from, to));
+            if let Some(piece) = new_board.get_piece(&from) {
+                new_board.set_piece(to, piece.clone());
+                new_board.remove_piece(&from);
+                
+                // Calculate value using minimax
+                let value = -self.minimax(&new_board, self.depth - 1, -beta, -alpha, self.color.opposite());
+                
+                if value > best_value {
+                    best_value = value;
+                    best_move = Some((from, to));
+                }
+                
+                alpha = alpha.max(value);
             }
-            
-            alpha = alpha.max(value);
         }
         
         best_move
@@ -62,9 +64,9 @@ impl ChessAI {
         
         for (from, to) in moves {
             let mut new_board = board.clone();
-            if let Some(piece) = new_board.get_piece(from) {
-                new_board.set_piece(to, Some(piece));
-                new_board.set_piece(from, None);
+            if let Some(piece) = new_board.get_piece(&from) {
+                new_board.set_piece(to, piece.clone());
+                new_board.remove_piece(&from);
                 
                 let value = -self.minimax(&new_board, depth - 1, -beta, -alpha, color.opposite());
                 max_value = max_value.max(value);
@@ -85,7 +87,8 @@ impl ChessAI {
         // Simple material counting
         for rank in 0..8 {
             for file in 0..8 {
-                if let Some(piece) = board.get_piece(Position { rank, file }) {
+                let pos = Position::new(file, rank);
+                if let Some(piece) = board.get_piece(&pos) {
                     let piece_value = match piece.piece_type {
                         PieceType::Pawn => 1.0,
                         PieceType::Knight => 3.0,
@@ -113,23 +116,13 @@ impl ChessAI {
         // Basic move generation (to be expanded)
         for rank in 0..8 {
             for file in 0..8 {
-                let from = Position { rank, file };
-                if let Some(piece) = board.get_piece(from) {
+                let from = Position::new(file, rank);
+                if let Some(piece) = board.get_piece(&from) {
                     if piece.color == color {
-                        // Add potential moves based on piece type
-                        // (This is a placeholder - full implementation needed)
-                        // For now, just add adjacent squares as possible moves
-                        for &(dr, df) in &[(1,0), (-1,0), (0,1), (0,-1)] {
-                            let new_rank = rank as i8 + dr;
-                            let new_file = file as i8 + df;
-                            
-                            if new_rank >= 0 && new_rank < 8 && new_file >= 0 && new_file < 8 {
-                                let to = Position { 
-                                    rank: new_rank as i8, 
-                                    file: new_file as i8 
-                                };
-                                moves.push((from, to));
-                            }
+                        // Get valid moves for this piece
+                        let valid_moves = board.get_valid_moves(&from);
+                        for to in valid_moves {
+                            moves.push((from, to));
                         }
                     }
                 }
@@ -146,4 +139,3 @@ pub enum Difficulty {
     Intermediate,
     Advanced,
 }
-

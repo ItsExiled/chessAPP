@@ -21,13 +21,13 @@
 //! use chess_app::{Board, GameState, Position, Color};
 //!
 //! let mut board = Board::new_game();
-//! let mut game = GameState::new(board);
+//! let mut game = GameState::new();
 //! 
 //! // Make a move from e2 to e4
-//! let from = Position::from_notation("e2").unwrap();
-//! let to = Position::from_notation("e4").unwrap();
+//! let from = Position::new(4, 1);
+//! let to = Position::new(4, 3);
 //! 
-//! if game.make_move(from, to).is_ok() {
+//! if board.make_move(&from, &to) {
 //!     println!("Moved piece from e2 to e4");
 //! }
 //! ```
@@ -45,4 +45,3 @@ mod tests;
 pub use types::{Color, Piece, PieceType, Position};
 pub use board::Board;
 pub use state::GameState;
-

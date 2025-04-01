@@ -21,15 +21,15 @@ EOF
     echo "Created ${color}_${piece}.svg"
 }
 
-# Create pieces for both colors
+# Create assets for both colors
 PIECES=("pawn" "knight" "bishop" "rook" "queen" "king")
 
-# White pieces (white background, black text)
+# White assets (white background, black text)
 for piece in "${PIECES[@]}"; do
     create_piece "white" "$piece" "#FFFFFF" "#000000"
 done
 
-# Black pieces (black background, white text)
+# Black assets (black background, white text)
 for piece in "${PIECES[@]}"; do
     create_piece "black" "$piece" "#000000" "#FFFFFF"
 done

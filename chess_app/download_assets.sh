@@ -7,7 +7,7 @@ mkdir -p assets
 # Using the "Chess Pieces Sprite" set which is available under Creative Commons
 BASE_URL="https://commons.wikimedia.org/wiki/Special:Redirect/file/Chess"
 
-# Download pieces
+# Download assets
 PIECES=("Pawn" "Knight" "Bishop" "Rook" "Queen" "King")
 COLORS=("White" "Black")
 

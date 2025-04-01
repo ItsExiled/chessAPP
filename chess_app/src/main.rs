@@ -1,11 +1,12 @@
 mod gui;
 mod state;
-mod rules;
+mod board;
+mod types;
 mod ai;
 
 use iced::{
-    Application, Command, Element, Settings, Theme,
-    executor, window,
+    executor, window, Application, Element, Settings, Theme,
+    Command,
 };
 
 use gui::{GuiState, GuiMessage, Screen};
@@ -17,9 +18,9 @@ pub struct ChessApp {
 }
 
 impl Application for ChessApp {
+    type Executor = executor::Default;
     type Message = GuiMessage;
     type Theme = Theme;
-    type Executor = executor::Default;
     type Flags = ();
 
     fn new(_flags: ()) -> (ChessApp, Command<GuiMessage>) {
@@ -52,12 +53,34 @@ impl Application for ChessApp {
                 self.gui_state.screen = Screen::MainMenu;
                 self.game_state = None;
             }
+            GuiMessage::SquareSelected(pos) => {
+                // Handle square selection for moves
+                if let Some(selected) = self.gui_state.selected_square {
+                    // Attempt to make a move if a square was already selected
+                    if let Some(game_state) = &mut self.game_state {
+                        if game_state.board.is_valid_move(&selected, &pos) {
+                            game_state.board.make_move(&selected, &pos);
+                            game_state.switch_turn();
+                        }
+                    }
+                    self.gui_state.selected_square = None;
+                } else {
+                    // Select the square if it contains a piece of the current player
+                    if let Some(game_state) = &self.game_state {
+                        if let Some(piece) = game_state.board.get_piece(&pos) {
+                            if piece.color == game_state.current_player {
+                                self.gui_state.selected_square = Some(pos);
+                            }
+                        }
+                    }
+                }
+            }
         }
         Command::none()
     }
 
     fn view(&self) -> Element<GuiMessage> {
-        self.gui_state.view()
+        self.gui_state.view(self.game_state.as_ref())
     }
 }
 
@@ -70,62 +93,3 @@ pub fn main() -> iced::Result {
         ..Default::default()
     })
 }
-
-mod gui;
-mod state;
-mod rules;
-mod ai;
-
-use iced::{
-    Application, Command, Element, Settings, Theme,
-    executor, window,
-};
-
-pub struct ChessApp {
-    // We'll add state here later
-}
-
-#[derive(Debug, Clone)]
-pub enum Message {
-    // We'll add messages here later
-}
-
-impl Application for ChessApp {
-    type Message = Message;
-    type Theme = Theme;
-    type Executor = executor::Default;
-    type Flags = ();
-
-    fn new(_flags: ()) -> (ChessApp, Command<Message>) {
-        (
-            ChessApp {
-                // Initialize state here later
-            },
-            Command::none(),
-        )
-    }
-
-    fn title(&self) -> String {
-        String::from("Chess Game")
-    }
-
-    fn update(&mut self, message: Message) -> Command<Message> {
-        Command::none()
-    }
-
-    fn view(&self) -> Element<Message> {
-        // We'll implement the view later
-        iced::widget::text("Chess Game").into()
-    }
-}
-
-pub fn main() -> iced::Result {
-    ChessApp::run(Settings {
-        window: window::Settings {
-            size: (800, 600),
-            ..Default::default()
-        },
-        ..Default::default()
-    })
-}
-

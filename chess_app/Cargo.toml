@@ -2,8 +2,26 @@
 name = "chess_app"
 version = "0.1.0"
 edition = "2021"
+authors = ["Your Name <your.email@example.com>"]
+description = "A chess application with GUI and AI"
 
 [dependencies]
-iced = "0.10"
+# Updated iced with the correct features that exist in version 0.9.0
+iced = { version = "0.9.0", features = ["tokio", "image", "canvas", "wgpu"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
+lazy_static = "1.4"
+
+# Remove conflicting font dependencies
+# Only keep what's necessary
+
+# Uncomment the below line if you want a terminal-based UI instead
+# termion = "2.0.1"
+
+# Comment out the benchmark configuration until needed
+# [dev-dependencies]
+# criterion = "0.5.1"
+
+# [[bench]]
+# name = "ai_benchmark"
+# harness = false

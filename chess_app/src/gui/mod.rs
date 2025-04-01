@@ -1,6 +1,8 @@
 use iced::widget::{button, column, container, row, text, Column, Row, Container};
-use iced::{Alignment, Element, Length, Color as IcedColor};
-use crate::rules::{Position, Piece, PieceType, Color};
+use iced::{Alignment, Element, Length, Color as IcedColor, Theme};
+// Add these imports
+use iced::theme;
+use crate::types::{Position, Color};
 use crate::state::GameState;
 
 #[derive(Debug, Clone)]
@@ -32,29 +34,45 @@ pub enum GuiMessage {
     SquareSelected(Position),
 }
 
+// Create a custom style for chess squares
+#[derive(Debug, Clone, Copy)]
+pub struct ChessSquareStyle {
+    is_dark: bool,
+    is_selected: bool,
+}
+
+impl container::StyleSheet for ChessSquareStyle {
+    type Style = Theme;
+
+    fn appearance(&self, _theme: &Self::Style) -> container::Appearance {
+        let background = if self.is_selected {
+            IcedColor::from_rgb(0.7, 0.7, 1.0)
+        } else if self.is_dark {
+            IcedColor::from_rgb(0.6, 0.4, 0.2)
+        } else {
+            IcedColor::from_rgb(1.0, 0.9, 0.7)
+        };
+
+        container::Appearance {
+            background: Some(background.into()),
+            ..Default::default()
+        }
+    }
+}
+
+// Fix the implementation to work with custom styling
+impl From<ChessSquareStyle> for theme::Container {
+    fn from(style: ChessSquareStyle) -> Self {
+        theme::Container::Custom(Box::new(style))
+    }
+}
+
 impl GuiState {
     pub fn new() -> Self {
         GuiState {
             screen: Screen::MainMenu,
             selected_difficulty: Difficulty::Beginner,
             selected_square: None,
-        }
-    }
-    
-    fn get_piece_symbol(piece: &Piece) -> &'static str {
-        match (piece.piece_type, piece.color) {
-            (PieceType::King, Color::White) => "♔",
-            (PieceType::Queen, Color::White) => "♕",
-            (PieceType::Rook, Color::White) => "♖",
-            (PieceType::Bishop, Color::White) => "♗",
-            (PieceType::Knight, Color::White) => "♘",
-            (PieceType::Pawn, Color::White) => "♙",
-            (PieceType::King, Color::Black) => "♚",
-            (PieceType::Queen, Color::Black) => "♛",
-            (PieceType::Rook, Color::Black) => "♜",
-            (PieceType::Bishop, Color::Black) => "♝",
-            (PieceType::Knight, Color::Black) => "♞",
-            (PieceType::Pawn, Color::Black) => "♟",
         }
     }
 
@@ -128,26 +146,25 @@ impl GuiState {
             let mut board_row = Row::new().spacing(0);
             
             for file in 0..8 {
-                let pos = Position { rank, file };
+                let pos = Position::new(file, rank);
                 let is_dark = (rank + file) % 2 == 1;
                 let is_selected = self.selected_square == Some(pos);
                 
-                let square_color = if is_selected {
-                    IcedColor::from_rgb(0.7, 0.7, 1.0)
-                } else if is_dark {
-                    IcedColor::from_rgb(0.6, 0.4, 0.2)
-                } else {
-                    IcedColor::from_rgb(1.0, 0.9, 0.7)
+                // Create a proper style struct
+                let square_style = ChessSquareStyle {
+                    is_dark,
+                    is_selected,
                 };
                 
-                let piece_text = if let Some(piece) = game_state.board.get_piece(pos) {
-                    text(Self::get_piece_symbol(&piece))
-                        .size(40)
-                        .style(if piece.color == Color::White {
-                            iced::theme::Text::Default
-                        } else {
-                            iced::theme::Text::Color(IcedColor::BLACK)
-                        })
+                let piece_text = if let Some(piece) = game_state.board.get_piece(&pos) {
+                    let mut txt = text(GameState::get_piece_symbol(piece))
+                        .size(40);
+                        
+                    if piece.color == Color::Black {
+                        txt = txt.style(IcedColor::BLACK);
+                    }
+                    
+                    txt
                 } else {
                     text("")
                 };
@@ -155,12 +172,7 @@ impl GuiState {
                 let square = Container::new(piece_text)
                     .width(Length::Fixed(60.0))
                     .height(Length::Fixed(60.0))
-                    .style(iced::theme::Container::Custom(Box::new(move |_| {
-                        iced::widget::container::Appearance {
-                            background: Some(square_color.into()),
-                            ..Default::default()
-                        }
-                    })))
+                    .style(square_style)
                     .center_x()
                     .center_y();
                 
@@ -186,4 +198,3 @@ impl GuiState {
         .into()
     }
 }
-

@@ -1,7 +1,7 @@
 //! Chess game type definitions
 //!
 //! This module contains the core type definitions used throughout the chess application,
-//! including colors, piece types, pieces, and board positions. These types provide the
+//! including colors, piece types, assets, and board positions. These types provide the
 //! fundamental building blocks for representing a chess game state.
 
 use serde::{Deserialize, Serialize};
@@ -41,6 +41,13 @@ pub struct Piece {
     pub color: Color,
 }
 
+impl Piece {
+    /// Creates a new piece with the specified type and color.
+    pub fn new(piece_type: PieceType, color: Color) -> Self {
+        Piece { piece_type, color }
+    }
+}
+
 /// Represents a position on the chess board.
 ///
 /// The position uses zero-based indexing:
@@ -48,20 +55,16 @@ pub struct Piece {
 /// - `file` ranges from 0-7 (corresponding to columns a-h in chess notation)
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct Position {
-    pub rank: i8,  // 0-7 (1-8 in chess notation)
-    pub file: i8,  // 0-7 (a-h in chess notation)
+    pub file: u8,  // 0-7 (a-h in chess notation)
+    pub rank: u8,  // 0-7 (1-8 in chess notation)
 }
 
 impl Position {
     /// Creates a new position if the coordinates are valid.
     ///
     /// Returns `None` if either coordinate is outside the 0-7 range.
-    pub fn new(file: i8, rank: i8) -> Option<Self> {
-        if file >= 0 && file < 8 && rank >= 0 && rank < 8 {
-            Some(Position { rank, file })
-        } else {
-            None
-        }
+    pub fn new(file: u8, rank: u8) -> Self {
+        Position { file, rank }
     }
 
     /// Creates a new position from standard chess notation.
@@ -105,7 +108,7 @@ impl Position {
         
         // Convert rank (1-8) to coordinate (0-7)
         let rank = match rank_char.to_digit(10) {
-            Some(r) if r >= 1 && r <= 8 => (r - 1) as i8,
+            Some(r) if r >= 1 && r <= 8 => (r - 1) as u8,
             _ => return None, // Invalid rank
         };
         
@@ -136,17 +139,17 @@ impl Position {
         }
         
         // Convert file (0-7) to file letter (a-h)
-        let file_char = (b'a' + self.file as u8) as char;
+        let file_char = (b'a' + self.file) as char;
         
         // Convert rank (0-7) to rank number (1-8)
-        let rank_num = self.rank as u8 + 1;
+        let rank_num = self.rank + 1;
         
         format!("{}{}", file_char, rank_num)
     }
 
     /// Checks if the position is within the valid chess board bounds.
     pub fn is_valid(&self) -> bool {
-        self.file >= 0 && self.file < 8 && self.rank >= 0 && self.rank < 8
+        self.file < 8 && self.rank < 8
     }
 }
 
