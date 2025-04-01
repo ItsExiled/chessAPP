@@ -4,6 +4,10 @@ use iced::{Alignment, Element, Length, Color as IcedColor, Theme};
 use iced::theme;
 use iced::widget::image::Handle;
 use std::path::PathBuf;
+use resvg::usvg::{Tree, Options, TreeParsing};
+use resvg::tiny_skia::{Pixmap, Transform};
+use resvg::FitTo;
+use std::fs;
 use crate::types::{Position, Color, PieceType, Piece};
 use crate::state::GameState;
 
@@ -72,22 +76,61 @@ impl From<ChessSquareStyle> for theme::Container {
 // Helper function to get piece asset path
 fn get_piece_asset_path(piece: &Piece) -> PathBuf {
     let color_str = match piece.color {
-        Color::White => "white",
-        Color::Black => "black",
+        Color::White => "l", // l for light (white)
+        Color::Black => "d", // d for dark (black)
     };
     
     let piece_str = match piece.piece_type {
-        PieceType::King => "king",
-        PieceType::Queen => "queen",
-        PieceType::Rook => "rook",
-        PieceType::Bishop => "bishop",
-        PieceType::Knight => "knight",
-        PieceType::Pawn => "pawn",
+        PieceType::King => "k",   // king
+        PieceType::Queen => "q",  // queen
+        PieceType::Rook => "r",   // rook
+        PieceType::Bishop => "b", // bishop
+        PieceType::Knight => "n", // knight
+        PieceType::Pawn => "p",   // pawn
     };
     
-    let filename = format!("{}_{}.png", color_str, piece_str);
+    let filename = format!("Chess_{}{}{}.svg", piece_str, color_str, "t45");
     let home = std::env::var("HOME").unwrap_or_else(|_| String::from("/home/exiled"));
     PathBuf::from(format!("{}/chessAPP/chess_app/assets/{}", home, filename))
+}
+
+fn load_svg(path: &PathBuf, width: u32, height: u32) -> Option<Handle> {
+    // Read SVG file
+    let svg_data = match fs::read_to_string(path) {
+        Ok(data) => data,
+        Err(e) => {
+            println!("Error reading SVG file: {}, error: {}", path.display(), e);
+            return None;
+        }
+    };
+    
+    // Parse SVG
+    let opt = Options::default();
+    let tree = match Tree::from_str(&svg_data, &opt) {
+        Ok(tree) => tree,
+        Err(e) => {
+            println!("Error parsing SVG: {}, error: {}", path.display(), e);
+            return None;
+        }
+    };
+    
+    // Create a pixmap to render to
+    let mut pixmap = match Pixmap::new(width, height) {
+        Some(pixmap) => pixmap,
+        None => {
+            println!("Error creating pixmap for {}", path.display());
+            return None;
+        }
+    };
+    
+    // Render SVG to pixmap
+    resvg::render(&tree, FitTo::Size(width, height), Transform::default(), pixmap.as_mut());
+    
+    // Convert to RGBA bytes
+    let rgba = pixmap.take();
+    
+    // Create image handle
+    Some(Handle::from_pixels(width, height, rgba))
 }
 
 // Add this function for simpler fallback piece representation
@@ -203,9 +246,27 @@ impl GuiState {
                     // Try to load the image asset
                     let asset_path = get_piece_asset_path(piece);
                     
+                    // Debug prints to help diagnose asset loading issues
+                    println!("Looking for asset: {}", asset_path.display());
+                    println!("File exists: {}", asset_path.exists());
+                    
                     if asset_path.exists() {
                         // If asset exists, use the image
-                        let img = Handle::from_path(asset_path);
+                        let img = match load_svg(&asset_path, 50, 50) {
+                            Some(handle) => handle,
+                            None => {
+                                println!("Failed to load SVG: {}", asset_path.display());
+                                // Fallback to text representation
+                                let symbol = GameState::get_piece_symbol(piece);
+                                let piece_text = if symbol.starts_with('�') {
+                                    get_simple_piece_text(piece)
+                                } else {
+                                    symbol.to_string()
+                                };
+                                
+                                return text(piece_text).size(40).into();
+                            }
+                        };
                         image(img)
                             .width(Length::Fixed(50.0))
                             .height(Length::Fixed(50.0))

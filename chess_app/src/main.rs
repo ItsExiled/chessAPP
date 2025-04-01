@@ -2,8 +2,12 @@ mod gui;
 mod state;
 mod board;
 mod types;
+// Comment out the rules module which duplicates types
+// mod rules;
 mod ai;
 
+use ai::ChessAI;
+use types::Color;
 use iced::{
     executor, window, Application, Element, Settings, Theme,
     Command,
@@ -15,6 +19,7 @@ use state::GameState;
 pub struct ChessApp {
     gui_state: GuiState,
     game_state: Option<GameState>,
+    chess_ai: Option<ChessAI>,
 }
 
 impl Application for ChessApp {
@@ -28,6 +33,7 @@ impl Application for ChessApp {
             ChessApp {
                 gui_state: GuiState::new(),
                 game_state: None,
+                chess_ai: None,
             },
             Command::none(),
         )
@@ -42,6 +48,7 @@ impl Application for ChessApp {
             GuiMessage::NewGame => {
                 self.game_state = Some(GameState::new());
                 self.gui_state.screen = Screen::Game;
+                self.chess_ai = Some(ChessAI::new(Color::Black, self.gui_state.selected_difficulty.clone()));
             }
             GuiMessage::SetDifficulty(difficulty) => {
                 self.gui_state.selected_difficulty = difficulty;
@@ -52,6 +59,7 @@ impl Application for ChessApp {
             GuiMessage::BackToMenu => {
                 self.gui_state.screen = Screen::MainMenu;
                 self.game_state = None;
+                self.chess_ai = None;
             }
             GuiMessage::SquareSelected(pos) => {
                 // Handle square selection for moves
@@ -61,6 +69,19 @@ impl Application for ChessApp {
                         if game_state.board.is_valid_move(&selected, &pos) {
                             game_state.board.make_move(&selected, &pos);
                             game_state.switch_turn();
+                            
+                            // If it's now the AI's turn (Black), make an AI move
+                            if game_state.current_player == Color::Black {
+                                if let Some(chess_ai) = &self.chess_ai {
+                                    if let Some((from, to)) = chess_ai.get_best_move(game_state) {
+                                        // Make the AI's move
+                                        if game_state.board.is_valid_move(&from, &to) {
+                                            game_state.board.make_move(&from, &to);
+                                            game_state.switch_turn(); // Switch back to player's turn
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                     self.gui_state.selected_square = None;

@@ -1,6 +1,7 @@
 use crate::board::Board;
 use crate::types::{Color, Position, PieceType};
 use crate::state::GameState;
+use crate::gui::Difficulty;
 
 pub struct ChessAI {
     color: Color,
@@ -131,11 +132,4 @@ impl ChessAI {
         
         moves
     }
-}
-
-#[derive(Debug, Clone, Copy)]
-pub enum Difficulty {
-    Beginner,
-    Intermediate,
-    Advanced,
 }

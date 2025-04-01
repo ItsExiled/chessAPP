@@ -56,6 +56,7 @@ impl GameState {
     }
     
     /// Record a piece movement
+    #[allow(dead_code)]
     pub fn record_move(&mut self, from: Position, to: Position, promotion_piece: Option<PieceType>) {
         let move_count = self.piece_move_history.entry(from).or_insert(0);
         *move_count += 1;
@@ -74,21 +75,25 @@ impl GameState {
     }
     
     /// Check if a piece has moved (for castling)
+    #[allow(dead_code)]
     pub fn has_piece_moved(&self, pos: Position) -> bool {
         self.piece_move_history.get(&pos).copied().unwrap_or(0) > 0
     }
     
     /// Get the last move (for en passant)
+    #[allow(dead_code)]
     pub fn get_last_move(&self) -> Option<&Move> {
         self.last_move.as_ref()
     }
     
     /// Record a pawn promotion
+    #[allow(dead_code)]
     pub fn record_promotion(&mut self, pos: Position) {
         self.promoted_pawns.insert(pos);
     }
     
     /// Check if a pawn has been promoted
+    #[allow(dead_code)]
     pub fn is_promoted_pawn(&self, pos: Position) -> bool {
         self.promoted_pawns.contains(&pos)
     }
@@ -102,6 +107,7 @@ impl GameState {
     }
     
     /// Update the game status
+    #[allow(dead_code)]
     pub fn update_status(&mut self, new_status: GameStatus) {
         self.status = new_status;
     }
