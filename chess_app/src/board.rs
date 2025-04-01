@@ -59,7 +59,77 @@ impl Board {
         self.pieces.is_empty()
     }
 
-    /// Validates if a move is legal according to chess rules.
+    /// Find the position of the king for the given color
+    pub fn find_king(&self, color: Color) -> Option<Position> {
+        for rank in 0..8 {
+            for file in 0..8 {
+                let pos = Position::new(file, rank);
+                if let Some(piece) = self.get_piece(&pos) {
+                    if piece.piece_type == PieceType::King && piece.color == color {
+                        return Some(pos);
+                    }
+                }
+            }
+        }
+        None
+    }
+
+    /// Check if a position is under attack by a specific color
+    pub fn is_square_attacked(&self, pos: &Position, by_color: Color) -> bool {
+        // Check all opponent's pieces for potential attacks
+        for rank in 0..8 {
+            for file in 0..8 {
+                let from = Position::new(file, rank);
+                if let Some(piece) = self.get_piece(&from) {
+                    if piece.color == by_color {
+                        // Special case for pawns, since their attack pattern is different from their move pattern
+                        if piece.piece_type == PieceType::Pawn {
+                            let direction = if by_color == Color::White { 1 } else { -1 };
+                            let file_diff = (from.file as i8 - pos.file as i8).abs();
+                            let rank_diff = pos.rank as i8 - from.rank as i8;
+                            
+                            // Pawns attack diagonally forward
+                            if file_diff == 1 && rank_diff == direction {
+                                return true;
+                            }
+                        } 
+                        // For king, we need special handling to avoid infinite recursion
+                        else if piece.piece_type == PieceType::King {
+                            let file_diff = (from.file as i8 - pos.file as i8).abs();
+                            let rank_diff = (from.rank as i8 - pos.rank as i8).abs();
+                            
+                            // King can attack one square in any direction
+                            if file_diff <= 1 && rank_diff <= 1 {
+                                return true;
+                            }
+                        }
+                        // For all other pieces, use the regular move validation
+                        else if self.is_valid_piece_move(&from, pos, piece) {
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+        false
+    }
+
+    /// Check if the king of a specific color is in check
+    pub fn is_king_in_check(&self, king_color: Color) -> bool {
+        if let Some(king_pos) = self.find_king(king_color) {
+            return self.is_square_attacked(&king_pos, king_color.opposite());
+        }
+        false
+    }
+
+    /// Makes a move without validation (for internal use)
+    fn make_move_unchecked(&mut self, from: &Position, to: &Position) {
+        if let Some(piece) = self.remove_piece(from) {
+            self.set_piece(*to, piece);
+        }
+    }
+
+    /// Validates if a move is legal according to chess rules, including check validation
     pub fn is_valid_move(&self, from: &Position, to: &Position) -> bool {
         // Get piece at starting position
         let piece = match self.get_piece(from) {
@@ -74,6 +144,21 @@ impl Board {
             }
         }
         
+        // Verify the piece-specific move is valid
+        if !self.is_valid_piece_move(from, to, piece) {
+            return false;
+        }
+        
+        // Simulate the move to check if it would leave the king in check
+        let mut board_copy = self.clone();
+        board_copy.make_move_unchecked(from, to);
+        
+        // After the move, the player's king must not be in check
+        !board_copy.is_king_in_check(piece.color)
+    }
+
+    /// Validates if a move is legal according to the specific piece rules, without check validation
+    fn is_valid_piece_move(&self, from: &Position, to: &Position, piece: &Piece) -> bool {
         match piece.piece_type {
             PieceType::Pawn => self.is_valid_pawn_move(from, to, piece.color),
             PieceType::Knight => self.is_valid_knight_move(from, to),
